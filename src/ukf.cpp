@@ -1,6 +1,7 @@
 #include "ukf.h"
 #include "Eigen/Dense"
 #include <iostream>
+#include <fstream>
 #include <time.h>
 
 
@@ -33,7 +34,7 @@ UKF::UKF() {
   std_a_ = 1.5;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 3;
+  std_yawdd_ = .353;
 
 
 
@@ -66,13 +67,24 @@ UKF::UKF() {
 	// px, py, v, yaw, yawd
 	// 1, 1, 1, 1, .1 = ~1 rmse for most catagories
 	// .1, .1, .1, .1, .1 = ~ decent RMSE until it threads the middle loop. Could be due to the yawdd
-	P_ <<   1, 0, 0, 0, 0,
-					0, 1, 0, 0, 0,
-					0, 0, 1, 0, 0,
-					0, 0, 0, 1, 0,
+	P_ <<   .15, 0, 0, 0, 0,
+					0, .15, 0, 0, 0,
+					0, 0, 5, 0, 0,
+					0, 0, 0, .1, 0,
 					0, 0, 0, 0, .1;
 
 
+	R_las_ << std_laspx_ * std_laspx_, 0,
+					0, std_laspy_ * std_laspy_;
+
+	R_radar_ << std_radr_*std_radr_, 0, 0,
+					0, std_radphi_*std_radphi_, 0,
+					0, 0, std_radrd_*std_radrd_;
+
+	NIS_las_;
+	NIS_radar_;
+
+	ofstream myfile_;
 
 }
 
@@ -85,8 +97,8 @@ UKF::~UKF() {}
 void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 
 
-	time_t time1;
-	time(&time1);
+	//time_t time1;
+	//time(&time1);
 
 	// If Not Initialized
   if (!is_initialized_){
@@ -94,20 +106,20 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 			double ro = meas_package.raw_measurements_(0);
 			double phi = meas_package.raw_measurements_(1);
 			double ro_dot = meas_package.raw_measurements_(2);
-			x_ << sin(phi)*ro, cos(phi)*ro, 1, 0, 0;
+			x_ << cos(phi)*ro, sin(phi)*ro, 5, 0, 0;
 		}
 		else if (meas_package.sensor_type_ == MeasurementPackage::LASER){
 			double px = meas_package.raw_measurements_(0);
 			double py = meas_package.raw_measurements_(1);
-			x_ << px, py, 1, 0, 0;
+			x_ << px, py, 5, 0, 0;
 		}
 
 		time_us_ = meas_package.timestamp_;
 		is_initialized_ = true;
 		std::cout << "Initialized\n";
 
-		time_t time2;
-		time(&time2);
+		//time_t time2;
+		//time(&time2);
 		//std::cout <<"Initialization took  " << (time2 - time1) << " Seconds \n";
 
 	}
@@ -123,8 +135,8 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 
 		//std::cout<< "delta_t = "<< delta_t << std::endl;
 
-		time_t time3;
-		time(&time3);
+		//time_t time3;
+		//time(&time3);
 		//std::cout <<"Prediction took  " << (time3 - time1) << " Seconds \n";
 
 
@@ -156,8 +168,8 @@ void UKF::Prediction(double delta_t) {
 
 	// ---------------------------------------------------------- Generate Sigma Points
 
-	time_t time1;
-	time(&time1);
+	//time_t time1;
+	//time(&time1);
 
 	// Set up our augmentation containers
 	MatrixXd Xsig_aug = MatrixXd(n_aug_, 2 * n_aug_ + 1);
@@ -191,9 +203,9 @@ void UKF::Prediction(double delta_t) {
 		Xsig_aug.col(i+1+n_aug_) = x_aug - sqrt(lambda_ + n_aug_)*L.col(i);
 	}
 
-	time_t time2;
-	time(&time2);
-	std::cout <<"Generating Sigma Points took  " << (time2 - time1) << " Seconds \n";
+	//time_t time2;
+	//time(&time2);
+	//std::cout <<"Generating Sigma Points took  " << (time2 - time1) << " Seconds \n";
 
 
 
@@ -244,9 +256,9 @@ void UKF::Prediction(double delta_t) {
 
 	}
 
-	time_t time3;
-	time(&time3);
-	std::cout <<"Predicting Sigma Points took  " << (time3 - time2) << " Seconds \n";
+	//time_t time3;
+	//time(&time3);
+	//std::cout <<"Predicting Sigma Points took  " << (time3 - time2) << " Seconds \n";
 	
 	// ----------------------------------------------------------  Predict Mean and Covariance
 
@@ -261,9 +273,9 @@ void UKF::Prediction(double delta_t) {
 		x_mean += weights_(i)*Xsig_pred_.col(i);
 	}
 
-	time_t timem;
-	time(&timem);
-	std::cout <<"Filling the Mean took  " << (timem - time3) << " Seconds \n";
+	//time_t timem;
+	//time(&timem);
+	//std::cout <<"Filling the Mean took  " << (timem - time3) << " Seconds \n";
 
 	P_.fill(0.0);
 	for (int i = 1; i < 2*n_aug_ + 1; i++) {
@@ -271,7 +283,7 @@ void UKF::Prediction(double delta_t) {
 		VectorXd x_diff = Xsig_pred_.col(i) - Xsig_pred_.col(0);
 		//normalize angles
 		//std::cout << "x_mean during p_ calc = "<< x_mean(3) << std::endl;
-		std::cout << "x_diff before normalization = "<< x_diff(3) << std::endl;
+		//std::cout << "x_diff before normalization = "<< x_diff(3) << std::endl;
 
 		x_diff(3) = NormalizeAngle(x_diff(3));
 		//while (x_diff(3) > M_PI) x_diff(3) -= 2. * M_PI;		// This takes a lot of time for some reason.
@@ -279,7 +291,7 @@ void UKF::Prediction(double delta_t) {
 		// store P_predicted
 		P_ += weights_(i) * x_diff * x_diff.transpose();
 
-		std::cout << "x_diff after normalization = "<< x_diff(3) << std::endl;
+		//std::cout << "x_diff after normalization = "<< x_diff(3) << std::endl;
 	}
 
 /*
@@ -297,10 +309,10 @@ void UKF::Prediction(double delta_t) {
 		std::cout << "x_diff after normalization = "<< x_diff(3) << std::endl;
 	}
 */
-	time_t timepmcv;
-	time(&timepmcv);
-	std::cout <<"subtracting the Mean took  " << (timepmcv - timem) << " Seconds \n";
-	std::cout <<"Predicting Mean and Covariance took  " << (timepmcv - time3) << " Seconds \n";
+	//time_t timepmcv;
+	//time(&timepmcv);
+	//std::cout <<"subtracting the Mean took  " << (timepmcv - timem) << " Seconds \n";
+	//std::cout <<"Predicting Mean and Covariance took  " << (timepmcv - time3) << " Seconds \n";
 
 }
 
@@ -312,8 +324,8 @@ void UKF::Prediction(double delta_t) {
 void UKF::UpdateLidar(MeasurementPackage meas_package)
 {
 
-	time_t timeUL1;
-	time(&timeUL1);
+	//time_t timeUL1;
+	//time(&timeUL1);
 
 
 	// Radar Space State
@@ -342,9 +354,9 @@ void UKF::UpdateLidar(MeasurementPackage meas_package)
 		Zsig(1, i) = p_y;
 	}
 
-	time_t timeUL2;
-	time(&timeUL2);
-	std::cout <<"Calculating the LU Sigma points took  " << (timeUL2 - timeUL1) << " Seconds \n";
+	//time_t timeUL2;
+	//time(&timeUL2);
+	//std::cout <<"Calculating the LU Sigma points took  " << (timeUL2 - timeUL1) << " Seconds \n";
 
 	// Calculate Mean Predicted Measurement
 	VectorXd z_pred = VectorXd(n_z);
@@ -354,9 +366,9 @@ void UKF::UpdateLidar(MeasurementPackage meas_package)
 	}
 
 
-	time_t timeUL3;
-	time(&timeUL3);
-	std::cout <<"Calculating the LU Mean predicted Measurement took  " << (timeUL3 - timeUL2) << " Seconds \n";
+	//time_t timeUL3;
+	//time(&timeUL3);
+	//std::cout <<"Calculating the LU Mean predicted Measurement took  " << (timeUL3 - timeUL2) << " Seconds \n";
 
 	// Create Covariance Matrix S
 	MatrixXd S = MatrixXd(n_z, n_z);
@@ -373,7 +385,7 @@ void UKF::UpdateLidar(MeasurementPackage meas_package)
 		// residual
 		VectorXd z_diff = Zsig.col(i) - Zsig.col(0);
 		// angle norm
-		z_diff(1) = NormalizeAngle(z_diff(1));
+		//z_diff(1) = NormalizeAngle(z_diff(1));
 		//while (z_diff(1) > M_PI) z_diff(1) -= 2. * M_PI;
 		//while (z_diff(1) < -M_PI) z_diff(1) += 2. * M_PI;
 		S += weights_(i) * z_diff * z_diff.transpose();
@@ -389,15 +401,13 @@ void UKF::UpdateLidar(MeasurementPackage meas_package)
 
 	}
 
-	time_t timeUL4;
-	time(&timeUL4);
-	std::cout <<"Calculating the LU S and TC took  " << (timeUL4 - timeUL3) << " Seconds \n";
+	//time_t timeUL4;
+	//time(&timeUL4);
+	//std::cout <<"Calculating the LU S and TC took  " << (timeUL4 - timeUL3) << " Seconds \n";
 
 	// add measurement noise covariance matrix
-	MatrixXd R = MatrixXd(n_z, n_z);
-	R << std_laspx_ * std_laspx_, 0,
-					0, std_laspy_ * std_laspy_;
-	S = S + R;
+
+	S = S + R_las_;
 
 
 	// Calculate Kalman Gain
@@ -406,7 +416,7 @@ void UKF::UpdateLidar(MeasurementPackage meas_package)
 	// Calculate residual
 	VectorXd z_diff = z - z_pred;
 	// Normalize residual
-	z_diff(1) = NormalizeAngle(z_diff(1));
+	//z_diff(1) = NormalizeAngle(z_diff(1));
 	//while (z_diff(1) > M_PI) z_diff(1) -= 2. * M_PI;
 	//while (z_diff(1) < -M_PI) z_diff(1) += 2. * M_PI;
 
@@ -414,12 +424,16 @@ void UKF::UpdateLidar(MeasurementPackage meas_package)
 	// Update state and covariance matrix
 	x_ += K * z_diff;
 	P_ -= K * S * K.transpose();
+	NIS_las_ = (z_pred - z).transpose() * S.inverse() * (z_pred - z);
+
+	std::cout << "NIS Laser : " << NIS_las_ << std::endl;
 
 
 
-	time_t timeUL5;
-	time(&timeUL5);
-	std::cout <<"Calculating the LU x and P took  " << (timeUL5 - timeUL4) << " Seconds \n";
+
+	//time_t timeUL5;
+	//time(&timeUL5);
+	//std::cout <<"Calculating the LU x and P took  " << (timeUL5 - timeUL4) << " Seconds \n";
 }
 
 
@@ -430,8 +444,8 @@ void UKF::UpdateLidar(MeasurementPackage meas_package)
  */
 void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
-	time_t timeUR1;
-	time(&timeUR1);
+	//time_t timeUR1;
+	//time(&timeUR1);
 
 	// Radar Space State
 	int n_z = 3;
@@ -452,6 +466,8 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 		double v = Xsig_pred_(2,i);
 		double yaw = Xsig_pred_(3,i);
 
+		//double v1 = sin(yaw)*v;	// v_x
+		//double v2 = cos(yaw)*v; // v_y
 		double v1 = cos(yaw)*v;	// v_x
 		double v2 = sin(yaw)*v; // v_y
 
@@ -469,8 +485,8 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 		}
 	}
 
-	time_t timeUR2;
-	time(&timeUR2);
+  //time_t timeUR2;
+	//time(&timeUR2);
 	//std::cout <<"Calculating the UR Sigma points took  " << (timeUR2 - timeUR1) << " Seconds \n";
 
 	// Calculate Mean Predicted Measurement
@@ -480,8 +496,8 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 		z_pred = z_pred + weights_(i) * Zsig.col(i);
 	}
 
-	time_t timeUR3;
-	time(&timeUR3);
+	//time_t timeUR3;
+	//time(&timeUR3);
 	//std::cout <<"Calculating the UR Mean took  " << (timeUR3 - timeUR2) << " Seconds \n";
 
 	// Create Covariance Matrix S
@@ -517,16 +533,13 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 	}
 
 
-	time_t timeUR4;
-	time(&timeUR4);
-	std::cout <<"Calculating the UR S and Tc took  " << (timeUR4 - timeUR3) << " Seconds \n";
+	//time_t timeUR4;
+	//time(&timeUR4);
+	//std::cout <<"Calculating the UR S and Tc took  " << (timeUR4 - timeUR3) << " Seconds \n";
 
 	// add measurement noise covariance matrix
-	MatrixXd R = MatrixXd(n_z,n_z);
-	R << std_radr_*std_radr_, 0, 0,
-				0, std_radphi_*std_radphi_, 0,
-				0, 0, std_radrd_*std_radrd_;
-	S = S + R;
+
+	S = S + R_radar_;
 
 
 	// Calculate Kalman Gain
@@ -544,9 +557,34 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 	x_ +=  K*z_diff;
 	P_ -= K*S*K.transpose();
 
+	NIS_radar_ = (z_pred - z).transpose() * S.inverse() * (z_pred - z);
 
-	time_t timeUR5;
-	time(&timeUR5);
-	std::cout <<"Calculating the UR x and P took  " << (timeUR5 - timeUR4) << " Seconds \n";
+	std::cout << "NIS Radar : " << NIS_radar_ << std::endl;
+
+	//time_t timeUR5;
+	//time(&timeUR5);
+	//std::cout <<"Calculating the UR x and P took  " << (timeUR5 - timeUR4) << " Seconds \n";
+
+}
+
+
+void UKF::write_file_data(ofstream &myfile_){
+
+	double v1 = cos(x_(3))*x_(2);
+	double v2 = sin(x_(3))*x_(2);
+
+	myfile_ << v1 << ", ";
+	myfile_ << v2 << ", ";
+	myfile_ << NIS_radar_ << ", ";
+	myfile_ << NIS_las_ << ", ";
+	myfile_ << x_(0) << ", ";
+	myfile_ << x_(1) << ", ";
+	myfile_ << x_(2) << ", ";
+	myfile_ << x_(3) << ", ";
+	myfile_ << x_(4); //<< ", ";
+
+	myfile_ << " \r\n";
+	//myfile_ << std::endl;
+
 
 }

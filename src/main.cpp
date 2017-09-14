@@ -1,5 +1,6 @@
 #include <uWS/uWS.h>
 #include <iostream>
+#include <fstream>
 #include "json.hpp"
 #include <math.h>
 #include "ukf.h"
@@ -26,10 +27,29 @@ std::string hasData(std::string s) {
   return "";
 }
 
+
+
+void write_gt_file_data(ofstream &infile, VectorXd gt_val){
+
+	infile << gt_val(0) << ", ";
+	infile << gt_val(1) << ", ";
+	infile << gt_val(2) << ", ";
+	infile << gt_val(3) << ", ";
+
+	//myfile_ << std::endl;
+
+
+}
+
+
+ofstream data_txt_file;
+
+
+
 int main()
 {
 
-
+	data_txt_file.open("/mnt/c/Users/M0J0/Documents/001_Self_Driving_Car/term2_sim_windows/output_data.txt");
 	std::cout << "Start" << std::endl;
 
   uWS::Hub h;
@@ -116,7 +136,8 @@ int main()
     	  gt_values(2) = vx_gt;
     	  gt_values(3) = vy_gt;
     	  ground_truth.push_back(gt_values);
-          
+
+				write_gt_file_data(data_txt_file, gt_values);
           //Call ProcessMeasurment(meas_package) for Kalman filter
 
 					ukf.ProcessMeasurement(meas_package);
@@ -150,6 +171,8 @@ int main()
           msgJson["rmse_vx"] = RMSE(2);
           msgJson["rmse_vy"] = RMSE(3);
 
+
+					ukf.write_file_data(data_txt_file); // write data to file
 
 						auto msg = "42[\"estimate_marker\"," + msgJson.dump() + "]";
 						 //std::cout << msg << std::endl;
@@ -203,7 +226,7 @@ int main()
 		}
 		h.run();
 
-
+		data_txt_file.close();
 		std::cout << "Finish";
 		 }
 

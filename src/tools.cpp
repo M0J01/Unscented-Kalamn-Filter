@@ -14,8 +14,8 @@ Tools::~Tools() {}
 VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
                               const vector<VectorXd> &ground_truth) {
 
-	time_t time1;
-	time(&time1);
+	//time_t time1;
+	//time(&time1);
 
 	VectorXd rmse(4);
 	rmse << 0,0,0,0;
@@ -44,9 +44,9 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
 	//calculate the squared root
 	rmse = rmse.array().sqrt();
 
-	time_t time2;
-	time(&time2);
-	std::cout <<"Calculating RMSE took  " << (time2 - time1) << " Seconds \n";
+	//time_t time2;
+	//time(&time2);
+	//std::cout <<"Calculating RMSE took  " << (time2 - time1) << " Seconds \n";
 	//return the result
 	return rmse;
 

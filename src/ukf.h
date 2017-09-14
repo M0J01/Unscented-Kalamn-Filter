@@ -5,10 +5,12 @@
 #include "Eigen/Dense"
 #include <vector>
 #include <string>
+#include <iostream>
 #include <fstream>
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
+using namespace std;
 
 class UKF {
 public:
@@ -67,6 +69,16 @@ public:
   ///* Sigma point spreading parameter
   double lambda_;
 
+	VectorXd NIS_las_;
+
+	VectorXd NIS_radar_;
+
+	MatrixXd R_las_ = MatrixXd(2, 2);
+
+	MatrixXd R_radar_ = MatrixXd(3, 3);
+
+  ofstream myfile_;
+
 
   /**
    * Constructor
@@ -102,6 +114,9 @@ public:
    * @param meas_package The measurement at k+1
    */
   void UpdateRadar(MeasurementPackage meas_package);
+
+  void write_file_data(ofstream &myfile_);
+
 };
 
 #endif /* UKF_H */
