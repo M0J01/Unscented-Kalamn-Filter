@@ -31,10 +31,10 @@ UKF::UKF() {
   P_ = MatrixXd(5, 5);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 1.5;
+  std_a_ = 1;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = .353;
+  std_yawdd_ = 3;
 
 
 
@@ -57,7 +57,7 @@ UKF::UKF() {
 	weights_ = VectorXd(n_aug_*2+1);
 
 	// set weights
-	double weight_0 = lambda_/(lambda_ + n_aug_);
+	double weight_0 = lambda_/(lambda_*1.0 + n_aug_);
 	weights_(0) = weight_0;
 	for (int i =1; i < 2*n_aug_+1; i++){
 		double weight = 0.5/(n_aug_+lambda_);
@@ -67,19 +67,28 @@ UKF::UKF() {
 	// px, py, v, yaw, yawd
 	// 1, 1, 1, 1, .1 = ~1 rmse for most catagories
 	// .1, .1, .1, .1, .1 = ~ decent RMSE until it threads the middle loop. Could be due to the yawdd
+
 	P_ <<   .15, 0, 0, 0, 0,
 					0, .15, 0, 0, 0,
 					0, 0, 5, 0, 0,
 					0, 0, 0, .1, 0,
 					0, 0, 0, 0, .1;
 
+	/*
+	P_ <<     0.0043,   -0.0013,    0.0030,   -0.0022,   -0.0020,
+					-0.0013,    0.0077,    0.0011,    0.0071,    0.0060,
+					0.0030,    0.0011,    0.0054,    0.0007,    0.0008,
+					-0.0022,    0.0071,    0.0007,    0.0098,    0.0100,
+					-0.0020,    0.0060,    0.0008,    0.0100,    0.0123;
+	*/
+	R_las_ = MatrixXd(2,2);
+	R_las_ << 	std_laspx_ * std_laspx_, 0,
+							0, std_laspy_ * std_laspy_;
 
-	R_las_ << std_laspx_ * std_laspx_, 0,
-					0, std_laspy_ * std_laspy_;
-
+	R_radar_ = MatrixXd(3,3);
 	R_radar_ << std_radr_*std_radr_, 0, 0,
-					0, std_radphi_*std_radphi_, 0,
-					0, 0, std_radrd_*std_radrd_;
+							0, std_radphi_*std_radphi_, 0,
+							0, 0, std_radrd_*std_radrd_;
 
 	NIS_las_;
 	NIS_radar_;
@@ -105,13 +114,13 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 		if (meas_package.sensor_type_ == MeasurementPackage::RADAR){
 			double ro = meas_package.raw_measurements_(0);
 			double phi = meas_package.raw_measurements_(1);
-			double ro_dot = meas_package.raw_measurements_(2);
-			x_ << cos(phi)*ro, sin(phi)*ro, 5, 0, 0;
+			//double ro_dot = meas_package.raw_measurements_(2);
+			x_ << cos(phi)*ro, sin(phi)*ro, 2.2049, 0, 0;
 		}
 		else if (meas_package.sensor_type_ == MeasurementPackage::LASER){
 			double px = meas_package.raw_measurements_(0);
 			double py = meas_package.raw_measurements_(1);
-			x_ << px, py, 5, 0, 0;
+			x_ << px, py, 2.2049, 0.5015, 0.3528;
 		}
 
 		time_us_ = meas_package.timestamp_;
@@ -128,7 +137,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 	else if (is_initialized_){
 
 		//Predict
-		double delta_t = (meas_package.timestamp_ - time_us_)/100000.0;
+		double delta_t = (meas_package.timestamp_ - time_us_)/1000000.0;
 		time_us_ = meas_package.timestamp_;
 		Prediction(delta_t);
 
@@ -227,7 +236,7 @@ void UKF::Prediction(double delta_t) {
 			// Calculate Sigma Points
 
 			// Avoid divide by 0
-			if(fabs(yawd) > 0.001){
+			if(fabs(yawd) > 0.0001){
 				px_p = p_x + v/yawd * (sin(yaw + yawd*delta_t) - sin(yaw));
 				py_p = p_y + v/yawd * (-cos(yaw + yawd*delta_t) + cos(yaw));
 			}
