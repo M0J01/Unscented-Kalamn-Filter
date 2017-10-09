@@ -1,3 +1,4 @@
+
 #include "ukf.h"
 #include "Eigen/Dense"
 #include <iostream>
@@ -375,6 +376,6 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
 }
 
-double UKF::normalizeAngle(double phi){
-  return  atan2(sin(phi), cos(phi));
+double UKF::normalizeAngle(double phi) {
+	return atan2(sin(phi), cos(phi));
 }

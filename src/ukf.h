@@ -1,6 +1,3 @@
-#ifndef UKF_H
-#define UKF_H
-
 #include "measurement_package.h"
 #include "Eigen/Dense"
 #include <vector>
@@ -112,4 +109,3 @@ public:
   double normalizeAngle(double x);
 };
 
-#endif /* UKF_H */

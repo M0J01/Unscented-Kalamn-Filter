@@ -1,3 +1,9 @@
+<<<<<<< HEAD
 "C:\Program Files\JetBrains\CLion 2017.2\bin\cmake\bin\cmake.exe" -E remove -f CMakeFiles\UnscentedKF.dir/objects.a
 C:\MinGW\bin\ar.exe cr CMakeFiles\UnscentedKF.dir/objects.a @CMakeFiles\UnscentedKF.dir\objects1.rsp
 C:\MinGW\bin\g++.exe -g   -Wl,--whole-archive CMakeFiles\UnscentedKF.dir/objects.a -Wl,--no-whole-archive  -o UnscentedKF.exe -Wl,--out-implib,libUnscentedKF.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\UnscentedKF.dir\linklibs.rsp
+=======
+"C:\Program Files\JetBrains\CLion 2017.2\bin\cmake\bin\cmake.exe" -E remove -f CMakeFiles\UnscentedKF.dir/objects.a
+C:\MinGW\bin\ar.exe cr CMakeFiles\UnscentedKF.dir/objects.a @CMakeFiles\UnscentedKF.dir\objects1.rsp
+C:\MinGW\bin\g++.exe -g   -Wl,--whole-archive CMakeFiles\UnscentedKF.dir/objects.a -Wl,--no-whole-archive  -o UnscentedKF.exe -Wl,--out-implib,libUnscentedKF.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\UnscentedKF.dir\linklibs.rsp
+>>>>>>> 0bede8f501d80f35b08f38e3b48003dc4ddd0c3a
