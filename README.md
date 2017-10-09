@@ -11,7 +11,7 @@ a constant prediction at certain time itnervals, and perform an update step once
 The project relies on a simulator to provide input data, and returns information to the simulator.
 The simulator can be found [here](https://github.com/udacity/self-driving-car-sim/releases)
 
-This project was complete as part of the UDACITY Self-Driving Car Engineer Nanodegree Program. For more information, or to enroll today, please check [here.](https://www.udacity.com/course/self-driving-car-engineer-nanodegree--nd013) 
+This project was completed as part of the UDACITY Self-Driving Car Engineer Nanodegree Program. For more information, or to enroll today, please check [here.](https://www.udacity.com/course/self-driving-car-engineer-nanodegree--nd013) 
 
 
 ## Process Flow
